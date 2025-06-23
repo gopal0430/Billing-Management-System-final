@@ -262,62 +262,93 @@ public partial class MainWindow : Window
         }
     }
 
+    // private void ProductTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    // {
+    //     string searchText = ProductTextBox.Text;
+
+    //     if (!string.IsNullOrEmpty(searchText))
+    //     {
+    //         ProductsDataList.Visibility = Visibility.Visible; // Show when text is typed
+    //         LoadProductData(searchText);
+    //         // ProductsDataList.SelectedIndex = 0; 
+
+    //         // if (Products.Any())
+    //         // {
+    //         //     ProductsDataList.SelectedIndex = 0;
+    //         //     ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+    //         // }
+
+    //         // Selection must be set AFTER LoadProductData updates the collection
+    //         if (Products.Any())
+    //         {
+    //             ProductsDataList.SelectedIndex = 0;
+    //             ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+    //         }
+    //         if (ProductsDataList.Items.Count == 0) // Ensure there are rows in the DataGrid
+    //         {
+
+    //             ProductsDataList.Visibility = Visibility.Collapsed;
+    //             e.Handled = true;
+    //         }
+    //         if (ProductsDataList.Items.Count > 0)
+    //         {
+    //             ProductsDataList.SelectedIndex = 0;                         // select first row
+    //             ProductsDataList.ScrollIntoView(ProductsDataList.Items[0]); // scroll into view
+    //             var firstRow = ProductsDataList.ItemContainerGenerator.ContainerFromIndex(0) as DataGridRow;
+    //             if (firstRow != null)
+    //             {
+    //                 firstRow.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+    //             }
+    //          e.Handled = true;
+    //         }
+
+
+    //     }
+    //     else
+    //     {
+    //         ProductsDataList.Visibility = Visibility.Collapsed; // Hide when text is cleared
+    //         Products.Clear(); // Clear the grid if the search text is empty
+    //     }
+
+
+
+
+
+
+    // }
+
+
     private void ProductTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        string searchText = ProductTextBox.Text;
+        string searchText = ProductTextBox.Text?.Trim();
 
-        if (!string.IsNullOrEmpty(searchText))
+        if (string.IsNullOrEmpty(searchText))
         {
-            ProductsDataList.Visibility = Visibility.Visible; // Show when text is typed
-            LoadProductData(searchText);
-            // ProductsDataList.SelectedIndex = 0; 
+            Products.Clear();                              // Clear list
+            ProductsDataList.Visibility = Visibility.Collapsed; // Hide grid
+            return;
+        }
 
-            // if (Products.Any())
-            // {
-            //     ProductsDataList.SelectedIndex = 0;
-            //     ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
-            // }
+        // Load filtered product data
+        LoadProductData(searchText);
 
-            // Selection must be set AFTER LoadProductData updates the collection
-            if (Products.Any())
+        if (Products.Any())
+        {
+            ProductsDataList.Visibility = Visibility.Visible;
+            ProductsDataList.SelectedIndex = 0;
+            ProductsDataList.ScrollIntoView(ProductsDataList.Items[0]);
+
+            var firstRow = ProductsDataList.ItemContainerGenerator.ContainerFromIndex(0) as DataGridRow;
+            if (firstRow != null)
             {
-                ProductsDataList.SelectedIndex = 0;
-                ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+                firstRow.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
             }
-            if (ProductsDataList.Items.Count == 0) // Ensure there are rows in the DataGrid
-            {
-
-                ProductsDataList.Visibility = Visibility.Collapsed;
-                e.Handled = true;
-            }
-            if (ProductsDataList.Items.Count > 0)
-            {
-                ProductsDataList.SelectedIndex = 0;                         // select first row
-                ProductsDataList.ScrollIntoView(ProductsDataList.Items[0]); // scroll into view
-                var firstRow = ProductsDataList.ItemContainerGenerator.ContainerFromIndex(0) as DataGridRow;
-                if (firstRow != null)
-                {
-                    firstRow.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
-                }
-             e.Handled = true;
-            }
-
-
         }
         else
         {
-            ProductsDataList.Visibility = Visibility.Collapsed; // Hide when text is cleared
-            Products.Clear(); // Clear the grid if the search text is empty
+            ProductsDataList.Visibility = Visibility.Collapsed;
         }
-
-
-
-
-
-
     }
-
-
 
 
     private Product _currentProduct; // <<--- ADD THIS LINE
@@ -526,7 +557,16 @@ public partial class MainWindow : Window
                 string pname = ProductTextBox.Text.Trim();
                 string qtyInput = QuantityTextBox.Text;
 
-
+                // Get selected unit from RateComboBox
+                string Unit = string.Empty;
+                if (RateComboBox.SelectedItem != null)
+                {
+                    Unit = RateComboBox.SelectedItem.ToString();
+                }
+                // if (unitName == "fpuh")
+                // {
+                //     rate = rate * 100; // Adjust if needed
+                // }
 
 
                 if (_selectedRowToUpdate != null)
@@ -535,7 +575,7 @@ public partial class MainWindow : Window
                     _selectedRowToUpdate.PName = pname;
                     _selectedRowToUpdate.Rate2 = rate;
                     _selectedRowToUpdate.Quantity = qty;
-
+                    _selectedRowToUpdate.Unit = Unit;
                     _selectedRowToUpdate = null; // Clear edit mode
                 }
                 else
@@ -599,12 +639,19 @@ public partial class MainWindow : Window
                         else
                         {
                             // Add a single combined row
+
+                            if (Unit == "gm")
+                            {
+                               // rate = rate / 1000; // Adjust if needed
+                            }
+
+
                             var newProduct = new SelectedProduct
                             {
                                 PName = pname,
                                 Rate2 = rate,
                                 Quantity = qty,
-                                Unit = UnitName // e.g., "kg" or "gram"
+                                Unit = Unit // e.g., "kg" or "gram"
                             };
                             LoadedProducts.Add(newProduct);
                             ProductsDataGrid.ItemsSource = LoadedProducts;
@@ -617,7 +664,7 @@ public partial class MainWindow : Window
 
                 // Update UI
                 UpdateGrandTotal();
-                SortProducts();
+                //SortProducts();
                 ProductsDataGrid.Items.Refresh();
 
                 // Clear inputs
@@ -775,49 +822,162 @@ public partial class MainWindow : Window
 
 
 
-private void ProductsDataList_PreviewKeyDown(object sender, KeyEventArgs e)
-{
-    if (Products.Count == 0) return;
-
-    int currentIndex = ProductsDataList.SelectedIndex;
-
-    if (e.Key == Key.Down)
+    private void ProductsDataList_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (currentIndex < Products.Count - 1)
+        if (Products.Count == 0) return;
+
+        int currentIndex = ProductsDataList.SelectedIndex;
+
+        if (e.Key == Key.Down)
         {
-            ProductsDataList.SelectedIndex = currentIndex + 1;
-            ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+            if (currentIndex < Products.Count - 1)
+            {
+                ProductsDataList.SelectedIndex = currentIndex + 1;
+                ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+            }
+            e.Handled = true;
         }
-        e.Handled = true;
-    }
-    else if (e.Key == Key.Up)
-    {
-        if (currentIndex > 0)
+        else if (e.Key == Key.Up)
         {
-            ProductsDataList.SelectedIndex = currentIndex - 1;
-            ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+            if (currentIndex > 0)
+            {
+                ProductsDataList.SelectedIndex = currentIndex - 1;
+                ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
+            }
+            e.Handled = true;
         }
-        e.Handled = true;
-    }
-    else if (e.Key == Key.Enter && ProductsDataList.SelectedItem is Product productFromList)
-    {
-        // Your existing selection logic
-        ProductTextBox.Text = productFromList.pname;
-        ProductTextBox.FontFamily = new FontFamily("SunTommy y Tamil");
+        else if (e.Key == Key.Enter && ProductsDataList.SelectedItem is Product productFromList)
+        {
 
-        // ... existing code continues ...
-        ProductsDataList.Visibility = Visibility.Collapsed;
-        e.Handled = true;
-    }
-    else
-    {
-        // Redirect all other keys to ProductTextBox
-        ProductTextBox.Focus();
 
-        // Optional: simulate the keystroke in ProductTextBox
-        // NOTE: You cannot easily simulate typed input, but redirecting focus lets user continue typing.
+
+            ProductTextBox.FontFamily = new FontFamily("SunTommy y Tamil");
+            ProductTextBox.Text = productFromList.pname;
+
+            if (!string.IsNullOrWhiteSpace(productFromList.Caption1) &&
+                !string.IsNullOrWhiteSpace(productFromList.Caption2))
+            {
+                RateTextBox.Visibility = Visibility.Collapsed;
+                RateComboBox.Visibility = Visibility.Visible;
+
+
+
+                _currentSelectedProduct = productFromList;
+
+
+
+                if (productFromList != null)
+                {
+                    // Check if Caption1, Caption2, Caption3 have different values
+                    bool hasDifferentCaptions =
+                        !string.IsNullOrWhiteSpace(productFromList.Caption1) &&
+                        !string.IsNullOrWhiteSpace(productFromList.Caption2) &&
+                        !string.IsNullOrWhiteSpace(productFromList.Caption3) &&
+                        (!productFromList.Caption1.Equals(productFromList.Caption2, StringComparison.OrdinalIgnoreCase) ||
+                         !productFromList.Caption1.Equals(productFromList.Caption3, StringComparison.OrdinalIgnoreCase) ||
+                         !productFromList.Caption2.Equals(productFromList.Caption3, StringComparison.OrdinalIgnoreCase));
+
+                    if (hasDifferentCaptions)
+                    {
+                        // Show ComboBox
+                        RateTextBox.Visibility = Visibility.Collapsed;
+                        RateComboBox.Visibility = Visibility.Visible;
+
+                        var rateOptions = new List<string>();
+
+                        if (!string.IsNullOrWhiteSpace(productFromList.Caption2)) // Rate1 = Caption2
+                        {
+                            if (!rateOptions.Contains(productFromList.Caption2))
+                            {
+                                rateOptions.Add(productFromList.Caption2);
+                                UnitName = productFromList.Caption2;
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(productFromList.Caption1)) // CaseRate = Caption1
+                        {
+                            if (!rateOptions.Contains(productFromList.Caption1))
+                            {
+                                rateOptions.Add(productFromList.Caption1);
+                                UnitName = productFromList.Caption1;
+                            }
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(productFromList.Caption3)) // Rate2 = Caption3
+                        {
+                            if (!rateOptions.Contains(productFromList.Caption3))
+                            {
+                                rateOptions.Add(productFromList.Caption3);
+                                UnitName = productFromList.Caption3;
+
+                            }
+                        }
+
+                        RateComboBox.ItemsSource = rateOptions;
+                        RateComboBox.SelectedIndex = 0;
+                        RateComboBox.FontFamily = new FontFamily("SunTommy y Tamil");
+                        RateComboBox.Focus();
+                        //  e.Handled = false;
+                    }
+                    else
+                    {
+                        // Show TextBox
+                        RateTextBox.Visibility = Visibility.Visible;
+                        RateComboBox.Visibility = Visibility.Collapsed;
+                        UnitName = productFromList.Caption3;
+                        // Default to Rate2
+                        RateTextBox.Text = productFromList.Rate2?.ToString("0.00") ?? "0.00";
+
+                        QuantityTextBox.Text = "1";
+                        QuantityTextBox.Focus();
+                        QuantityTextBox.SelectAll();
+
+                    }
+                }
+
+
+
+
+
+            }
+            else
+            {
+                RateTextBox.Visibility = Visibility.Visible;
+                RateComboBox.Visibility = Visibility.Collapsed;
+                RateTextBox.Text = productFromList.Rate2?.ToString("0.00") ?? "0.00";
+            }
+
+            //QuantityTextBox.Text = productFromList.Quantity?.ToString() ?? "0";
+
+            // _selectedRowToUpdate = new SelectedProduct
+            // {
+            //     PName = productFromList.PName,
+            //     Rate2 = productFromList.Rate2 ?? 0,
+            //     Quantity = productFromList.Quantity ?? 0
+            // };
+
+            RateComboBox.Focus();
+            ProductsDataList.Visibility = Visibility.Collapsed;
+            e.Handled = true;
+
+
+
+
+        }
+        else
+        {
+            // Redirect all other keys to ProductTextBox
+            ProductTextBox.Focus();
+
+        }
+
     }
-}
+
+
+
+
+
+
+
 
 
 
@@ -1169,7 +1329,7 @@ private void ProductsDataList_PreviewKeyDown(object sender, KeyEventArgs e)
 
         try
         {
-            using (OdbcConnection connection = new OdbcConnection(connectionString))
+            using (OdbcConnection connection = new OdbcConnection(DbConfig.ConnectionString))
             {
                 connection.Open();
 
@@ -1647,11 +1807,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                         case "fpuhk;":
                         case "ml":
                             rate = Convert.ToDecimal(reader["Rate1"]);
+                            if (rate == 0)
+                            {
+                                rate = Convert.ToDecimal(reader["Rate2"]);
+                                rate /= 1000;
+                            }
                             break;
                         //kilo
                         case "fpNyh":
                         case "liter":
                             rate = Convert.ToDecimal(reader["Rate2"]);
+
                             break;
                         //piece
                         case "gP];":
