@@ -4,6 +4,29 @@
              xmlns:local="clr-namespace:MyWpfApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <Style TargetType="TextBox">
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Padding"
+                    Value="4"/>
+            <Setter Property="BorderBrush"
+                    Value="Gray"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Background"
+                    Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsKeyboardFocused"
+                        Value="True">
+                    <Setter Property="BorderBrush"
+                            Value="DarkBlue"/>
+                    <Setter Property="BorderThickness"
+                            Value="2.5"/>
+                    <Setter Property="Background"
+                            Value="#FFFCEE"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
     </Application.Resources>
 </Application>
