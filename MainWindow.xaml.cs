@@ -1,9 +1,13 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Text;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -15,6 +19,9 @@ using GDS_Test_data.Models;
 using GDS_Test_data.Helpers;
 using System.Data;
 using System.Data.SqlClient;
+using MahApps.Metro.Controls.Dialogs;
+
+
 
 
 namespace MyWpfApp;
@@ -22,7 +29,7 @@ namespace MyWpfApp;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 {
 
 
@@ -30,6 +37,24 @@ public partial class MainWindow : Window
     {
         public static string ConnectionString =>
             "Driver={SQL Server};Server=169.254.53.203;Database=rs_gst_27;Uid=SA;Pwd=;";
+    }
+
+
+
+
+    public async Task<string> ShowMetroInputBox()
+    {
+        var result = await this.ShowInputAsync(
+            "Quantity Multiplier",
+            "Enter quantity multiplier (e.g., 2 for double, 3 for triple):",
+            new MetroDialogSettings
+            {
+
+                AnimateShow = true,
+                AnimateHide = true
+            });
+
+        return result; // Can be null if user presses Cancel
     }
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -45,7 +70,8 @@ public partial class MainWindow : Window
 
         if (e.Key == Key.Escape)
         {
-            FocusFirstCellInGrid();
+            FocusLastCellInGrid();
+            // FocusFirstCellInGrid();
             e.Handled = true;
         }
         if (e.Key == Key.F8)
@@ -69,6 +95,32 @@ public partial class MainWindow : Window
             if (ProductsDataGrid.ItemContainerGenerator.ContainerFromIndex(0) is DataGridRow row)
             {
                 if (ProductsDataGrid.Columns[0].GetCellContent(row)?.Parent is DataGridCell cell)
+                {
+                    cell.Focus();
+                    Keyboard.Focus(cell);
+                }
+            }
+        }
+    }
+
+    private void FocusLastCellInGrid()
+    {
+        int rowCount = ProductsDataGrid.Items.Count;
+        int colCount = ProductsDataGrid.Columns.Count;
+
+        if (rowCount > 0 && colCount > 0)
+        {
+            int lastRowIndex = rowCount - 1;
+            int lastColIndex = colCount - 1;
+
+            ProductsDataGrid.SelectedItem = ProductsDataGrid.Items[lastRowIndex];
+            ProductsDataGrid.CurrentCell = new DataGridCellInfo(ProductsDataGrid.Items[lastRowIndex], ProductsDataGrid.Columns[lastColIndex]);
+
+            ProductsDataGrid.ScrollIntoView(ProductsDataGrid.Items[lastRowIndex], ProductsDataGrid.Columns[lastColIndex]);
+
+            if (ProductsDataGrid.ItemContainerGenerator.ContainerFromIndex(lastRowIndex) is DataGridRow row)
+            {
+                if (ProductsDataGrid.Columns[lastColIndex].GetCellContent(row)?.Parent is DataGridCell cell)
                 {
                     cell.Focus();
                     Keyboard.Focus(cell);
@@ -107,12 +159,12 @@ public partial class MainWindow : Window
         ProductsDataGrid.PreviewKeyDown += ProductsDataGrid_PreviewKeyDown;
         ProductTextBox.PreviewKeyDown += ProductTextBox_PreviewKeyDown;
 
-
+        ProductTextBox.Focus();
 
         // // Hook key navigation for DataGrid
         // ProductsDataGrid.KeyDown += ProductsDataGrid_KeyDown;
 
-
+        BillNoTextBox.Text = getBillNo().ToString();
     }
 
     private void TxtBox_Clear()
@@ -122,6 +174,9 @@ public partial class MainWindow : Window
         RateTextBox.Clear();
         QuantityTextBox.Clear();
         // masalaComboBox.Text = "";
+        RateComboBox.SelectedIndex = -1;
+        RateTextBox.Visibility = Visibility.Visible;
+        RateComboBox.Visibility = Visibility.Collapsed;
         masalaComboBox.SelectedIndex = -1;
         GrandTotalTextBlock.Text = "";
     }
@@ -130,6 +185,7 @@ public partial class MainWindow : Window
     {
         RateComboBox.Text = "";
         UnitName = string.Empty;
+        SeparateRowsCheckBox.IsChecked = false;
 
     }
 
@@ -189,7 +245,7 @@ public partial class MainWindow : Window
                     ProductTextBox.FontFamily = new FontFamily("SunTommy y Tamil");
                     // Optional: move focus to Quantity or another control
                     QuantityTextBox.Focus();
-                    QuantityTextBox.Select(QuantityTextBox.Text.Length, 0); //To move the cursor to the end of the text
+                    QuantityTextBox.SelectAll(); //To move the cursor to the end of the text
                     e.Handled = true; // To prevent the default DataGrid behavior
                                       // Ensure control is available
                     if (ProductsDataList != null)
@@ -333,7 +389,7 @@ public partial class MainWindow : Window
         }
     }
 
-   
+
 
 
     private void ProductTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -382,7 +438,7 @@ public partial class MainWindow : Window
 
     private Product _currentProduct; // <<--- ADD THIS LINE
 
-    
+
     private void ApplySelectedRateFromComboBox()
     {
         try
@@ -473,6 +529,35 @@ public partial class MainWindow : Window
 
 
     }
+
+    public int getBillNo()
+    {
+        try
+        {
+            string getBillQuery = @"
+            SELECT MAX(bno)
+            FROM [dbo].[sales]
+            WHERE bno IS NOT NULL 
+              AND date = CONVERT(DATETIME, CONVERT(VARCHAR(10), GETDATE(), 120))";
+
+            object result = DatabaseHelper.ExecuteScalar(getBillQuery);
+
+            if (result != null && result != DBNull.Value)
+            {
+                return Convert.ToInt32(result) + 1;
+            }
+            else
+            {
+                return 1; // Default starting bill number
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return -1; // Or any error-specific default value
+        }
+    }
+
 
 
 
@@ -623,7 +708,7 @@ public partial class MainWindow : Window
 
     private Product _currentSelectedProduct;
 
-   
+
 
 
 
@@ -734,9 +819,21 @@ public partial class MainWindow : Window
                             // Default to Rate2
                             RateTextBox.Text = productFromList.Rate2?.ToString("0.00") ?? "0.00";
 
-                            QuantityTextBox.Text = "1";
-                            QuantityTextBox.Focus();
-                            QuantityTextBox.SelectAll();
+                            if (RateTextBox.Text == "0.00")
+                            {
+                                RateTextBox.Focus();
+                                RateTextBox.Focus();
+                                RateTextBox.SelectAll();
+
+                            }
+                            else
+                            {
+                                QuantityTextBox.Text = "1";
+                                QuantityTextBox.Focus();
+                                QuantityTextBox.SelectAll();
+                            }
+
+
 
                         }
                     }
@@ -753,7 +850,7 @@ public partial class MainWindow : Window
                     RateTextBox.Text = productFromList.Rate2?.ToString("0.00") ?? "0.00";
                 }
 
-                
+
 
                 RateComboBox.Focus();
                 ProductsDataList.Visibility = Visibility.Collapsed;
@@ -818,7 +915,7 @@ public partial class MainWindow : Window
     }
 
 
-    
+
 
 
 
@@ -872,32 +969,36 @@ public partial class MainWindow : Window
                     string selectedCategory = selectedItem.Tag.ToString();             // Actual value
                                                                                        // MessageBox.Show($"Display Text: {displayText}\nValue: {Mvalue}");
                                                                                        //  string selectedCategory = "Kari_Masala";
+
+
                     if (!string.IsNullOrEmpty(selectedCategory))
                     {
+                        AskQuantityMultiplier(selectedCategory);
                         // Prompt user for multiplier using a simple input dialog
-                        string input = Microsoft.VisualBasic.Interaction.InputBox(
-                            "Enter quantity multiplier (e.g., 2 for double, 3 for triple):",
-                            "Quantity Multiplier",
-                            "1");
+                        // string input = Microsoft.VisualBasic.Interaction.InputBox(
+                        //     "Enter quantity multiplier (e.g., 2 for double, 3 for triple):",
+                        //     "Quantity Multiplier",
+                        //     "1");
 
-                        // Try to parse the input as an integer multiplier
-                        if (decimal.TryParse(input, out decimal multiplier) && multiplier > 0)
-                        {
-                            List<SelectedProduct> products = GetProductsByCategory(selectedCategory, multiplier);
-                            ProductsDataGrid.ItemsSource = null;
-                            ProductsDataGrid.Items.Clear();
-                            foreach (var p in products)
-                            {
-                                LoadedProducts.Add(p);
-                            }
-                            ProductsDataGrid.ItemsSource = LoadedProducts;
-                            PNameNative.FontFamily = new FontFamily("SunTommy y Tamil");
-                            UpdateGrandTotal();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Invalid multiplier. Please enter a valid number.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
+                        // // Try to parse the input as an integer multiplier
+                        // if (decimal.TryParse(input, out decimal multiplier) && multiplier > 0)
+                        // {
+                        //     List<SelectedProduct> products = GetProductsByCategory(selectedCategory, multiplier);
+                        //     ProductsDataGrid.ItemsSource = null;
+                        //     ProductsDataGrid.Items.Clear();
+                        //     foreach (var p in products)
+                        //     {
+                        //         LoadedProducts.Add(p);
+                        //     }
+                        //     ProductsDataGrid.ItemsSource = LoadedProducts;
+                        //     PNameNative.FontFamily = new FontFamily("SunTommy y Tamil");
+                        //     UpdateGrandTotal();
+                        // }
+                        // else
+                        // {
+                        //     MessageBox.Show("Invalid multiplier. Please enter a valid number.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // }
+
                     }
                 }
             }
@@ -912,7 +1013,37 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void AskQuantityMultiplier(string selectedCategory)
+    {
+        string input = await ShowMetroInputBox();
 
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            // User cancelled or left it empty
+            MessageBox.Show("Multiplier input was cancelled.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (decimal.TryParse(input, out decimal multiplier) && multiplier > 0)
+        {
+            List<SelectedProduct> products = GetProductsByCategory(selectedCategory, multiplier);
+            ProductsDataGrid.ItemsSource = null;
+            ProductsDataGrid.Items.Clear();
+
+            foreach (var p in products)
+            {
+                LoadedProducts.Add(p);
+            }
+
+            ProductsDataGrid.ItemsSource = LoadedProducts;
+            PNameNative.FontFamily = new FontFamily("SunTommy y Tamil");
+            UpdateGrandTotal();
+        }
+        else
+        {
+            MessageBox.Show("Invalid multiplier. Please enter a valid number.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
 
     private bool _isRateComboInitialized = false;
@@ -997,7 +1128,7 @@ public partial class MainWindow : Window
 
     }
 
-    private void SaveSalesToDatabase()
+    private async void SaveSalesToDatabase()
     {
         string connectionString = "Driver={SQL Server};Server=.;Database=rs_gst_27;Trusted_Connection=Yes;";
         int newBillNo = 1; // default bill no
@@ -1141,13 +1272,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
                         //     MessageBox.Show($"✅ Placeholder count matches parameters: {qMarks}", "OK");
                         // }
 
-                        insertCmd.ExecuteNonQuery();
+                        // insertCmd.ExecuteNonQuery();
                     }
 
 
                 }
 
-                MessageBox.Show($"Sales saved successfully. Bill No: {newBillNo}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // MessageBox.Show($"Sales saved successfully. Bill No: {newBillNo}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // await ShowBillSavedDialogAsync(newBillNo);
+                await ShowBillSavedDialogAsync(newBillNo.ToString());
             }
         }
         catch (OdbcException ex)
@@ -1163,6 +1296,29 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
 
 
 
+    private async Task ShowBillSavedDialogAsync(string newBillNo)
+    {
+        var settings = new MetroDialogSettings
+        {
+            AffirmativeButtonText = "Copy Bill No",
+            NegativeButtonText = "Close",
+            AnimateShow = true,
+            AnimateHide = true,
+            ColorScheme = MetroDialogColorScheme.Theme
+        };
+
+        var result = await this.ShowMessageAsync(
+            "Sales Saved Successfully",
+            $"Bill No: {newBillNo}",
+            MessageDialogStyle.AffirmativeAndNegative,
+            settings);
+
+        if (result == MessageDialogResult.Affirmative)
+        {
+            Clipboard.SetText(newBillNo);
+            await this.ShowMessageAsync("Copied", "Bill No copied to clipboard.", MessageDialogStyle.Affirmative);
+        }
+    }
 
 
 
@@ -1186,7 +1342,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
             INNER JOIN 
                 ProductTemplates pt ON p.Pcode = pt.ProductName
             WHERE 
-                pt.Category = ?";
+                pt.Category = ? ORDER BY DisplayOrder";
 
         // using (var conn = new OdbcConnection(connectionString))
         using (OdbcConnection conn = new OdbcConnection(DbConfig.ConnectionString))
@@ -1263,6 +1419,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
 
         return productList; // Ensures all code paths return a value
     }
+
+
+
+
 
 
 

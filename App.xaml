@@ -4,29 +4,31 @@
              xmlns:local="clr-namespace:MyWpfApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <Style TargetType="TextBox">
-            <Setter Property="FontSize"
-                    Value="14"/>
-            <Setter Property="Padding"
-                    Value="4"/>
-            <Setter Property="BorderBrush"
-                    Value="Gray"/>
-            <Setter Property="BorderThickness"
-                    Value="1"/>
-            <Setter Property="Background"
-                    Value="White"/>
-            <Style.Triggers>
-                <Trigger Property="IsKeyboardFocused"
-                        Value="True">
-                    <Setter Property="BorderBrush"
-                            Value="DarkBlue"/>
-                    <Setter Property="BorderThickness"
-                            Value="2.5"/>
-                    <Setter Property="Background"
-                            Value="#FFFCEE"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <ResourceDictionary>
+            <!-- 👇 Your custom TextBox style -->
+            <Style TargetType="TextBox">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Padding" Value="4"/>
+                <Setter Property="BorderBrush" Value="Gray"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Background" Value="White"/>
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="DarkBlue"/>
+                        <Setter Property="BorderThickness" Value="2.5"/>
+                        <Setter Property="Background" Value="#FFFCEE"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
 
+            <!-- 👇 MahApps.Metro merged styles -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
+
+
