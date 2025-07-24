@@ -20,6 +20,7 @@ using GDS_Test_data.Helpers;
 using System.Data;
 using System.Data.SqlClient;
 using MahApps.Metro.Controls.Dialogs;
+using System.Text.RegularExpressions;
 
 
 
@@ -66,6 +67,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
             {
                 SaveSalesToDatabase(); // Call your save logic here
             }
+            Grid_Clear();
         }
 
         if (e.Key == Key.Escape)
@@ -79,6 +81,12 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
             TxtBox_Clear();
             ProductTextBox.Focus();
             e.Handled = true;
+        }
+        if (e.Key == Key.F9)
+        {
+            CustomerTextBox.Focus();
+            CustomerTextBox.SelectAll(); // Optional: highlight the text
+            e.Handled = true; // Prevent further propagation
         }
     }
 
@@ -144,6 +152,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
     public ObservableCollection<SelectedProduct> LoadedProducts { get; set; } = new ObservableCollection<SelectedProduct>();
     public string UnitName = string.Empty;
+    public string SelectedPCode { get; set; } = "";
 
     public MainWindow()
     {
@@ -165,6 +174,9 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         // ProductsDataGrid.KeyDown += ProductsDataGrid_KeyDown;
 
         BillNoTextBox.Text = getBillNo().ToString();
+        DateTextBox.Text = DateTime.Today.ToString("dd/MM/yyyy");
+        CustomerTextBox.Text = "COUNTER SALES";
+
     }
 
     private void TxtBox_Clear()
@@ -179,6 +191,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         RateComboBox.Visibility = Visibility.Collapsed;
         masalaComboBox.SelectedIndex = -1;
         GrandTotalTextBlock.Text = "";
+        CustomerTextBox.Text = "COUNTER SALES";
+        
     }
 
     private void Clear_Fields()
@@ -186,6 +200,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         RateComboBox.Text = "";
         UnitName = string.Empty;
         SeparateRowsCheckBox.IsChecked = false;
+        GrandTotalTextBlock.Text="";
 
     }
 
@@ -216,9 +231,15 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
     }
     private void ClearButton_Click(object sender, RoutedEventArgs e)
     {
+        Grid_Clear();
+    }
+
+    private void Grid_Clear()
+    {
         ProductsDataGrid.ItemsSource = null; // Clears the data grid
         LoadedProducts.Clear();
         TxtBox_Clear();
+
     }
 
     public static void ShowError(Exception ex)
@@ -263,6 +284,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                 {
                     LoadedProducts.Remove(selected1); // ObservableCollection auto-updates UI
                     UpdateGrandTotal();
+                    UpdateProductCount(); ;
                 }
             }
 
@@ -391,18 +413,80 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
 
 
+    // private bool isTextChanging = false;
+
+    // private void ProductTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    // {
+    //     if (isTextChanging) return; // Prevent re-entrancy
+
+    //     try
+    //     {
+    //         isTextChanging = true;
+
+    //         string searchText = ProductTextBox.Text?.Trim();
+
+    //         if (string.IsNullOrEmpty(searchText))
+    //         {
+    //             // Clear the product list and hide the data grid
+    //             Products.Clear();
+    //             ProductsDataList.Visibility = Visibility.Collapsed;
+    //             return;
+    //         }
+
+    //         // Load filtered product data
+    //         LoadProductData(searchText);
+
+    //         if (Products.Any())
+    //         {
+    //             // Show the data grid and select the first item
+    //             ProductsDataList.Visibility = Visibility.Visible;
+    //             ProductsDataList.SelectedIndex = 0;
+    //             ProductsDataList.ScrollIntoView(ProductsDataList.Items[0]);
+
+    //             // Move focus to the first row
+    //             var firstRow = ProductsDataList.ItemContainerGenerator.ContainerFromIndex(0) as DataGridRow;
+    //             if (firstRow != null)
+    //             {
+    //                 firstRow.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+    //             }
+    //         }
+    //         else
+    //         {
+    //             // Hide the data grid if no products are found
+    //             ProductsDataList.Visibility = Visibility.Collapsed;
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         // Handle any exceptions
+    //         ShowError(ex);
+    //     }
+    //     finally
+    //     {
+    //         // Reset the flag to allow further text changes
+    //         isTextChanging = false;
+    //     }
+    // }
+
+
+    private bool isTextChanging = false;
+    private bool isDataGridSelection = false;
 
     private void ProductTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (isTextChanging || isDataGridSelection) return; // Prevent re-entrancy and selection-triggered changes
+
         try
         {
+            isTextChanging = true;
 
             string searchText = ProductTextBox.Text?.Trim();
 
             if (string.IsNullOrEmpty(searchText))
             {
-                Products.Clear();                              // Clear list
-                ProductsDataList.Visibility = Visibility.Collapsed; // Hide grid
+                // Clear the product list and hide the data grid
+                Products.Clear();
+                ProductsDataList.Visibility = Visibility.Collapsed;
                 return;
             }
 
@@ -411,10 +495,12 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
             if (Products.Any())
             {
+                // Show the data grid and select the first item
                 ProductsDataList.Visibility = Visibility.Visible;
                 ProductsDataList.SelectedIndex = 0;
                 ProductsDataList.ScrollIntoView(ProductsDataList.Items[0]);
 
+                // Move focus to the first row
                 var firstRow = ProductsDataList.ItemContainerGenerator.ContainerFromIndex(0) as DataGridRow;
                 if (firstRow != null)
                 {
@@ -423,17 +509,41 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
             }
             else
             {
+                // Hide the data grid if no products are found
                 ProductsDataList.Visibility = Visibility.Collapsed;
             }
-
-
         }
-
         catch (Exception ex)
         {
+            // Handle any exceptions
             ShowError(ex);
         }
+        finally
+        {
+            // Reset the flag to allow further text changes
+            isTextChanging = false;
+        }
     }
+
+    private void ProductsDataList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ProductsDataList.SelectedItem != null)
+        {
+            try
+            {
+                isDataGridSelection = true;
+                // Assuming you're binding to a Product object
+                var selectedProduct = (Product)ProductsDataList.SelectedItem;
+                ProductTextBox.Text = selectedProduct.pname;
+            }
+            finally
+            {
+                isDataGridSelection = false;
+            }
+        }
+    }
+
+
 
 
     private Product _currentProduct; // <<--- ADD THIS LINE
@@ -488,6 +598,24 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
 
 
+    private void UpdateProductCount()
+    {
+        // int itemCount = ProductsDataGrid.Items
+        //     .OfType<object>()
+        //     .Count(item => ProductsDataGrid.ItemContainerGenerator.ContainerFromItem(item) != null);
+
+        // ProductCountTextBlock.Text = $": {itemCount}";
+
+        //   if (ProductsDataGrid.ItemsSource is IEnumerable<Product> products)
+        // {
+        //     int totalItems = products.Sum(p => p.NoOfItems); // Calculate total No Of Items
+        //     ProductCountTextBlock.Text = $"No Of Items: {totalItems}";
+        // }
+
+        int itemCount = ProductsDataGrid.Items.Count;
+        ProductCountTextBlock.Text = $": {itemCount}";
+
+    }
 
 
     public void LoadProductData(string productSearchText)
@@ -540,7 +668,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
             WHERE bno IS NOT NULL 
               AND date = CONVERT(DATETIME, CONVERT(VARCHAR(10), GETDATE(), 120))";
 
-            object result = DatabaseHelper.ExecuteScalar(getBillQuery);
+            object result = DatabaseHelper.ExecuteScalar(getBillQuery, DbConfig.ConnectionString);
 
             if (result != null && result != DBNull.Value)
             {
@@ -559,6 +687,32 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
     }
 
 
+    private void CustomerTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        try
+        {
+
+            if (e.Key == Key.Enter)
+            {
+
+                ProductTextBox.Focus();
+
+            }
+
+
+
+
+
+        }
+
+        catch (Exception ex)
+        {
+            ShowError(ex);
+        }
+
+
+
+    }
 
 
     private void QtyTxtBox_KeyDown(object sender, KeyEventArgs e)
@@ -600,6 +754,11 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                 {
                     string pname = ProductTextBox.Text.Trim();
 
+
+                    // 🔹 Match product to get PCode 
+                    // var matched = Products.FirstOrDefault(p => p.PName.Equals(pname, StringComparison.OrdinalIgnoreCase));
+                    // SelectedPCode = matched?.PCode ?? "";
+
                     // 🔹 Determine Unit from UnitName and RateComboBox
                     string selectedUnit = RateComboBox.SelectedItem?.ToString()?.Trim() ?? "";
                     string unit = UnitName;
@@ -628,6 +787,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                         _selectedRowToUpdate.Quantity = qty;
                         _selectedRowToUpdate.Unit = unit;
                         _selectedRowToUpdate = null;
+                        // _selectedRowToUpdate.PCode = SelectedPCode; // ✅ Add PCode
                     }
                     else
                     {
@@ -660,6 +820,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                                 p.PName.Equals(pname, StringComparison.OrdinalIgnoreCase) &&
                                 p.Unit.Equals(unit, StringComparison.OrdinalIgnoreCase));
 
+
                             if (sameProduct != null)
                             {
                                 sameProduct.Quantity += qty;
@@ -673,7 +834,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                                     PName = pname,
                                     Rate2 = rate,
                                     Quantity = qty,
-                                    Unit = unit
+                                    Unit = unit,
+                                    PCode = SelectedPCode
                                 };
                                 LoadedProducts.Add(newProduct);
                             }
@@ -684,6 +846,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
                     ProductsDataGrid.ItemsSource = LoadedProducts;
                     UpdateGrandTotal();
+                    UpdateProductCount(); ;
                     ProductsDataGrid.Items.Refresh();
 
                     // 🔹 Clear input fields
@@ -1038,6 +1201,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
             ProductsDataGrid.ItemsSource = LoadedProducts;
             PNameNative.FontFamily = new FontFamily("SunTommy y Tamil");
             UpdateGrandTotal();
+            UpdateProductCount(); ;
         }
         else
         {
@@ -1128,7 +1292,216 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
     }
 
+
+
+    private string EnsureCustomerName()
+    {
+        if (string.IsNullOrWhiteSpace(CustomerTextBox.Text))
+        {
+            CustomerTextBox.Text = "Counter Sale";
+        }
+        else
+        {
+            CustomerTextBox.Text = CustomerTextBox.Text.Trim();
+        }
+
+        return CustomerTextBox.Text;
+    }
+
+
     private async void SaveSalesToDatabase()
+    {
+
+        int newBillNo = 1; // default bill no
+
+        try
+        {
+            using (OdbcConnection connection = new OdbcConnection(DbConfig.ConnectionString))
+            {
+                connection.Open();
+
+                // Get new bill number
+                string getBillQuery = "SELECT MAX(bno)FROM [dbo].[sales] where bno!='null' and date =CONVERT(DATETIME, CONVERT(VARCHAR(10), GETDATE(), 120))";
+                using (OdbcCommand getBillCmd = new OdbcCommand(getBillQuery, connection))
+                {
+                    object result = getBillCmd.ExecuteScalar();
+                    if (result != DBNull.Value && result != null)
+                    {
+                        newBillNo = Convert.ToInt32(result) + 1;
+                    }
+                }
+
+                foreach (var item in LoadedProducts)
+                {
+                    string insertQuery = @"INSERT INTO [rs_gst_27].[dbo].[sales]
+            ([date], [bno], [party], [product], [rate], [qty], [category], [mrp], [sno], [costprice],
+            [add1], [add2], [subs1], [subs2], [billvalue], [batchno], [expdate], [type], [payment], [pperbox],
+            [caption], [note], [city], [codeno], [tax], [free], [st1], [tin], [bbookno], [billbook],
+            [salesman], [commcode], [tonage], [less1], [less2], [less3], [less4], [less5], [useable], [less6],
+            [add1caption], [add2caption], [less1caption], [less2caption], [add22], [less22], [category2], [time1],
+            [rate1], [rate2], [rate3], [godown], [wsrs], [username], [dmyname], [dmybno], [company], [dmydate],
+            [deleveryproduct], [address1], [address2], [phoneno], [podate], [pono], [reference], [despatch],
+            [destination], [terms], [cess], [additionalcess], [bnochar], [chkrate], [dele_add_one], [dele_add_two],
+            [dele_add_three], [dele_add_four], [dele_add_five], [dele_add_six], [packqty], [bonuspoints],
+            [sizename], [sizevalue], [bnochar_end], [colour], [stcs], [sal_tonage], [point_or_not], [sal_barcode],
+            [opincode], [gov_caption], [mailid], [distance], [sales_einvoice_irn], [sales_einvoice_ackno],
+            [sales_einvoice_ackdate], [sales_einvoice_authtoken])
+            VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+                    using (OdbcCommand insertCmd = new OdbcCommand(insertQuery, connection))
+                    {
+                        decimal rateResult = (decimal)Calculate_Price(Convert.ToDouble(item.Rate2), Convert.ToDouble(item.tax));
+                        object[] values = new object[]
+                                    {
+                        DateTime.Today,                  // [date]
+                        newBillNo,                     // [bno]
+                        EnsureCustomerName(),              // [party]
+                        item.PName,                   // [product]
+                        rateResult,                   // [rate]
+                        item.Quantity,                // [qty]
+                        "M PRODUCT",                  // [category]
+                        0,                            // [mrp]
+                        1343,                         // [sno]
+                        146.02,                       // [costprice]
+
+                        160.91,                       // [add1]
+                        0,                            // [add2]
+                        0,                            // [subs1]
+                        0,                            // [subs2]
+                        item.Quantity * item.Rate2,  // [billvalue]
+                        item.PCode,                   // [batchno]
+                        DateTime.Now,                 // [expdate]
+                        "SALES",                      // [type]
+                        item.Quantity * item.Rate2,  // [payment]
+                        1,                            // [pperbox]
+
+                        item.Unit,                    // [caption]
+                        ".",                          // [note]
+                        "CASH AREA",                  // [city]
+                        "",                           // [codeno]
+                        item.tax,                     // [tax]
+                        0,                            // [free]
+                        ".",                          // [st1]
+                        ".",                          // [tin]
+                        1,                            // [bbookno]
+                        "GST JUNE 24-25",             // [billbook]
+
+                        "DIRCET",                     // [salesman]
+                        "361",                        // [commcode]
+                        "0",                          // [tonage]
+                        0,                            // [less1]
+                        0,                            // [less2]
+                        0,                            // [less3]
+                        0,                            // [less4]
+                        0,                            // [less5]
+                        1,                            // [useable]
+                        10,                           // [less6]
+
+                        "Transport Charges",          // [add1caption]
+                        "Wages",                      // [add2caption]
+                        "Spl Pongan Offer",          // [less1caption]
+                        "Disp(-)",                    // [less2caption]
+                        0,                            // [add22]
+                        0,                            // [less22]
+                        item.Category,                // [category2]
+                        DateTime.Today,               // [time1]
+                        item.Rate2,                   // [rate1]
+                        0,                            // [rate2]
+
+                        0,                            // [rate3]
+                        "MAINGODWON",                 // [godown]
+                        0,                            // [wsrs]
+                        "admin",                      // [username]
+                        "",                           // [dmyname]
+                        0,                            // [dmybno]
+                        "M PRODUCT",                  // [company]
+                        "",                           // [dmydate]
+                        0,                            // [deleveryproduct]
+                        ".",                          // [address1]
+
+                        ".",                          // [address2]
+                        ".",                          // [phoneno]
+                        "",                           // [podate]
+                        "",                           // [pono]
+                        "",                           // [reference]
+                        "",                           // [despatch]
+                        "",                           // [destination]
+                        "",                           // [terms]
+                        0,                            // [cess]
+                        0,                            // [additionalcess]
+
+                        "1",                          // [bnochar]
+                        0,                            // [chkrate]
+                        "",                           // [dele_add_one]
+                        "",                           // [dele_add_two]
+                        "",                           // [dele_add_three]
+                        "",                           // [dele_add_four]
+                        "",                           // [dele_add_five]
+                        "",                           // [dele_add_six]
+                        0,                            // [packqty]
+                        0,                            // [bonuspoints]
+
+                        "",                           // [sizename]
+                        1,                            // [sizevalue]
+                        "",                           // [bnochar_end]
+                        "",                           // [colour]
+                        0,                            // [stcs]
+                        0,                            // [sal_tonage]
+                        1,                            // [point_or_not]
+                        ".",                          // [sal_barcode]
+                        "0",                          // [opincode]
+                        "",                           // [gov_caption]
+
+                        "",                           // [mailid]
+                        0,                            // [distance]
+                        ".",                          // [sales_einvoice_irn]
+                        ".",                          // [sales_einvoice_ackno]
+                        ".",                          // [sales_einvoice_ackdate]
+                        "."                           // [sales_einvoice_authtoken]
+                                    };
+
+
+                        BindParameters(insertCmd, values);
+                        insertCmd.ExecuteNonQuery();
+
+                    }
+
+
+                }
+
+                // MessageBox.Show($"Sales saved successfully. Bill No: {newBillNo}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // await ShowBillSavedDialogAsync(newBillNo);
+                await ShowBillSavedDialogAsync(newBillNo.ToString());
+            }
+        }
+        catch (OdbcException ex)
+        {
+            MessageBox.Show("ODBC Error:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("General Error:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+
+
+    public static void BindParameters(OdbcCommand cmd, params object[] values)
+    {
+        if (values.Length != 96)
+        {
+            throw new ArgumentException($"Expected 96 parameters, but received {values.Length}.");
+        }
+
+        foreach (var val in values)
+        {
+            cmd.Parameters.AddWithValue("", val ?? DBNull.Value); // Use DBNull.Value for nulls
+        }
+    }
+
+
+    private async void SaveSalesToDatabase_Old()
     {
         string connectionString = "Driver={SQL Server};Server=.;Database=rs_gst_27;Trusted_Connection=Yes;";
         int newBillNo = 1; // default bill no
@@ -1152,127 +1525,136 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
                 foreach (var item in LoadedProducts)
                 {
-                    string insertQuery = @"INSERT INTO [rs_gst_27].[dbo].[sales] 
-([date], [bno], [party], [product], [rate], [qty], [category], [mrp], [sno], [costprice], [add1], [add2], [subs1], [subs2], [billvalue], [batchno], [expdate], [type], [payment], [pperbox], [caption], [note], [city], [codeno], [tax], [free], [st1], [tin], [bbookno], [billbook], [salesman], [commcode], [tonage], [less1], [less2], [less3], [less4], [less5], [useable], [less6], [add1caption], [add2caption], [less1caption], [less2caption], [add22], [less22], [category2], [time1], [rate1], [rate2], [rate3], [godown], [wsrs], [username], [dmyname], [dmybno], [company], [dmydate], [deleveryproduct], [address1], [address2], [phoneno], [podate], [pono], [reference], [despatch], [destination], [terms], [cess], [additionalcess], [bnochar], [chkrate], [dele_add_one], [dele_add_two], [dele_add_three], [dele_add_four], [dele_add_five], [dele_add_six], [packqty], [bonuspoints], [sizename], [sizevalue], [bnochar_end], [colour], [stcs], [sal_tonage], [point_or_not], [sal_barcode], [opincode], [gov_caption], [mailid], [distance], [sales_einvoice_irn], [sales_einvoice_ackno], [sales_einvoice_ackdate], [sales_einvoice_authtoken])
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
+                    string insertQuery = @"INSERT INTO [rs_gst_27].[dbo].[sales] ([date], [bno], [party], [product], [rate], [qty], [category], [mrp], [sno], [costprice], [add1], [add2], [subs1], [subs2], [billvalue], [batchno], [expdate], [type], [payment], [pperbox], [caption], [note], [city], [codeno], [tax], [free], [st1], [tin], [bbookno], [billbook], [salesman], [commcode], [tonage], [less1], [less2], [less3], [less4], [less5], [useable], [less6], [add1caption], [add2caption], [less1caption], [less2caption], [add22], [less22], [category2], [time1], [rate1], [rate2], [rate3], [godown], [wsrs], [username], [dmyname], [dmybno], [company], [dmydate], [deleveryproduct], [address1], [address2], [phoneno], [podate], [pono], [reference], [despatch], [destination], [terms], [cess], [additionalcess], [bnochar], [chkrate], [dele_add_one], [dele_add_two], [dele_add_three], [dele_add_four], [dele_add_five], [dele_add_six], [packqty], [bonuspoints], [sizename], [sizevalue], [bnochar_end], [colour], [stcs], [sal_tonage], [point_or_not], [sal_barcode], [opincode], [gov_caption], [mailid], [distance], [sales_einvoice_irn], [sales_einvoice_ackno], [sales_einvoice_ackdate], [sales_einvoice_authtoken]) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                     using (OdbcCommand insertCmd = new OdbcCommand(insertQuery, connection))
                     {
                         Decimal rateResult = (Decimal)Calculate_Price(Convert.ToDouble(item.Rate2), Convert.ToDouble(item.tax));
-                        insertCmd.Parameters.AddWithValue("", DateTime.Now); // [date]
-                        insertCmd.Parameters.AddWithValue("", newBillNo);    // [bno]
-                        // insertCmd.Parameters.AddWithValue("", 93603);    // [bno]
-
-                        insertCmd.Parameters.AddWithValue("", "COUNTER SALES");       // [party]
-                        insertCmd.Parameters.AddWithValue("", item.PName);   // [product]
-                        insertCmd.Parameters.AddWithValue("", rateResult);   // [rate]
-                        insertCmd.Parameters.AddWithValue("", item.Quantity);// [qty]
-                        insertCmd.Parameters.AddWithValue("", "M PRODUCT");  // [category]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [mrp]
-                        insertCmd.Parameters.AddWithValue("", 1343);         // [sno]
-                        insertCmd.Parameters.AddWithValue("", 146.02);       // [costprice]
-                        insertCmd.Parameters.AddWithValue("", 160.91);       // [add1]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [add2]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [subs1]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [subs2]
-                        insertCmd.Parameters.AddWithValue("", item.Quantity * item.Rate2); // [billvalue]
-                        insertCmd.Parameters.AddWithValue("", item.PCode);          // [batchno]
-                        insertCmd.Parameters.AddWithValue("", DateTime.Now); // [expdate]
-                        insertCmd.Parameters.AddWithValue("", "SALES");      // [type]
-                        insertCmd.Parameters.AddWithValue("", item.Quantity * item.Rate2); // [payment]
-                        insertCmd.Parameters.AddWithValue("", 1);            // [pperbox]
-                        insertCmd.Parameters.AddWithValue("", item.Unit);       // [caption]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [note]
-                        insertCmd.Parameters.AddWithValue("", "CASH AREA");  // [city]
-                        insertCmd.Parameters.AddWithValue("", "");           // [codeno]
-                        insertCmd.Parameters.AddWithValue("", item.tax);          // [tax]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [free]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [st1]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [tin]
-                        insertCmd.Parameters.AddWithValue("", 1);            // [bbookno]
-                        insertCmd.Parameters.AddWithValue("", "GST JUNE 24-25"); // [billbook]
-                        insertCmd.Parameters.AddWithValue("", "DIRCET");     // [salesman]
-                        insertCmd.Parameters.AddWithValue("", "361");        // [commcode]
-                        insertCmd.Parameters.AddWithValue("", "0");          // [tonage]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [less1]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [less2]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [less3]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [less4]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [less5]
-                        insertCmd.Parameters.AddWithValue("", 1);            // [useable]
-                        insertCmd.Parameters.AddWithValue("", 10);           // [less6]
-                        insertCmd.Parameters.AddWithValue("", "Transport Charges"); // [add1caption]
-                        insertCmd.Parameters.AddWithValue("", "Wages");      // [add2caption]
-                        insertCmd.Parameters.AddWithValue("", "Spl Pongan Offer"); // [less1caption]
-                        insertCmd.Parameters.AddWithValue("", "Disp(-)");    // [less2caption]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [add22]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [less22]
-                        insertCmd.Parameters.AddWithValue("", item.Category);        // [category2]
-                        insertCmd.Parameters.AddWithValue("", DateTime.Today); // [time1]
-                        insertCmd.Parameters.AddWithValue("", item.Rate2);            // [rate1]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [rate2]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [rate3]
-                        insertCmd.Parameters.AddWithValue("", "MAINGODWON"); // [godown]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [wsrs]
-                        insertCmd.Parameters.AddWithValue("", "admin");      // [username]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dmyname]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [dmybno]
-                        insertCmd.Parameters.AddWithValue("", "M PRODUCT");  // [company]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dmydate]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [deleveryproduct]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [address1]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [address2]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [phoneno]
-                        insertCmd.Parameters.AddWithValue("", "");           // [podate]
-                        insertCmd.Parameters.AddWithValue("", "");           // [pono]
-                        insertCmd.Parameters.AddWithValue("", "");           // [reference]
-                        insertCmd.Parameters.AddWithValue("", "");           // [despatch]
-                        insertCmd.Parameters.AddWithValue("", "");           // [destination]
-                        insertCmd.Parameters.AddWithValue("", "");           // [terms]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [cess]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [additionalcess]
-                        insertCmd.Parameters.AddWithValue("", "1");          // [bnochar]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [chkrate]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dele_add_one]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dele_add_two]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dele_add_three]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dele_add_four]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dele_add_five]
-                        insertCmd.Parameters.AddWithValue("", "");           // [dele_add_six]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [packqty]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [bonuspoints]
-                        insertCmd.Parameters.AddWithValue("", "");           // [sizename]
-                        insertCmd.Parameters.AddWithValue("", 1);            // [sizevalue]
-                        insertCmd.Parameters.AddWithValue("", "");           // [bnochar_end]
-                        insertCmd.Parameters.AddWithValue("", "");           // [colour]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [stcs]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [sal_tonage]
-                        insertCmd.Parameters.AddWithValue("", 1);            // [point_or_not]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [sal_barcode]
-                        insertCmd.Parameters.AddWithValue("", "0");          // [opincode]
-                        insertCmd.Parameters.AddWithValue("", "");           // [gov_caption]
-                        insertCmd.Parameters.AddWithValue("", "");           // [mailid]
-                        insertCmd.Parameters.AddWithValue("", 0);            // [distance]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [sales_einvoice_irn]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [sales_einvoice_ackno]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [sales_einvoice_ackdate]
-                        insertCmd.Parameters.AddWithValue("", ".");          // [sales_einvoice_authtoken]
 
 
-                        // int qMarks = insertQuery.Count(c => c == '?');
-                        // int paramsAdded = insertCmd.Parameters.Count;
 
-                        // if (qMarks != paramsAdded)
+                        insertCmd.Parameters.AddWithValue("@date", DateTime.Now.ToString()); // [date]
+                        insertCmd.Parameters.AddWithValue("@bno", newBillNo);    // [bno]
+                        insertCmd.Parameters.AddWithValue("@party", EnsureCustomerName());       // [party]
+                        insertCmd.Parameters.AddWithValue("@product", item.PName);   // [product]
+                        insertCmd.Parameters.AddWithValue("@rate", rateResult);   // [rate]
+                        insertCmd.Parameters.AddWithValue("@qty", item.Quantity); // [qty]
+                        insertCmd.Parameters.AddWithValue("@category", "M PRODUCT");  // [category]
+                        insertCmd.Parameters.AddWithValue("@mrp", 0);            // [mrp]
+                        insertCmd.Parameters.AddWithValue("@sno", 1343);         // [sno]
+                        insertCmd.Parameters.AddWithValue("@costprice", 146.02); // [costprice]
+                        insertCmd.Parameters.AddWithValue("@add1", 160.91);      // [add1]
+                        insertCmd.Parameters.AddWithValue("@add2", 0);           // [add2]
+                        insertCmd.Parameters.AddWithValue("@subs1", 0);          // [subs1]
+                        insertCmd.Parameters.AddWithValue("@subs2", 0);          // [subs2]
+                        insertCmd.Parameters.AddWithValue("@billvalue", item.Quantity * item.Rate2); // [billvalue]
+                        insertCmd.Parameters.AddWithValue("@batchno", item.PCode);          // [batchno]
+                        insertCmd.Parameters.AddWithValue("@expdate", DateTime.Now); // [expdate]
+                        insertCmd.Parameters.AddWithValue("@type", "SALES");      // [type]
+                        insertCmd.Parameters.AddWithValue("@payment", item.Quantity * item.Rate2); // [payment]
+                        insertCmd.Parameters.AddWithValue("@pperbox", 1);         // [pperbox]
+                        insertCmd.Parameters.AddWithValue("@caption", item.Unit); // [caption]
+                        insertCmd.Parameters.AddWithValue("@note", ".");          // [note]
+                        insertCmd.Parameters.AddWithValue("@city", "CASH AREA");  // [city]
+                        insertCmd.Parameters.AddWithValue("@codeno", "");         // [codeno]
+                        insertCmd.Parameters.AddWithValue("@tax", item.tax);      // [tax]
+                        insertCmd.Parameters.AddWithValue("@free", 0);            // [free]
+                        insertCmd.Parameters.AddWithValue("@st1", ".");           // [st1]
+                        insertCmd.Parameters.AddWithValue("@tin", ".");           // [tin]
+                        insertCmd.Parameters.AddWithValue("@bbookno", 1);         // [bbookno]
+                        insertCmd.Parameters.AddWithValue("@billbook", "GST JUNE 24-25"); // [billbook]
+                        insertCmd.Parameters.AddWithValue("@salesman", "DIRCET"); // [salesman]
+                        insertCmd.Parameters.AddWithValue("@commcode", "361");    // [commcode]
+                        insertCmd.Parameters.AddWithValue("@tonage", "0");        // [tonage]
+                        insertCmd.Parameters.AddWithValue("@less1", 0);           // [less1]
+                        insertCmd.Parameters.AddWithValue("@less2", 0);           // [less2]
+                        insertCmd.Parameters.AddWithValue("@less3", 0);           // [less3]
+                        insertCmd.Parameters.AddWithValue("@less4", 0);           // [less4]
+                        insertCmd.Parameters.AddWithValue("@less5", 0);           // [less5]
+                        insertCmd.Parameters.AddWithValue("@useable", 1);         // [useable]
+                        insertCmd.Parameters.AddWithValue("@less6", 10);          // [less6]
+                        insertCmd.Parameters.AddWithValue("@add1caption", "Transport Charges"); // [add1caption]
+                        insertCmd.Parameters.AddWithValue("@add2caption", "Wages"); // [add2caption]
+                        insertCmd.Parameters.AddWithValue("@less1caption", "Spl Pongan Offer"); // [less1caption]
+                        insertCmd.Parameters.AddWithValue("@less2caption", "Disp(-)"); // [less2caption]
+                        insertCmd.Parameters.AddWithValue("@add22", 0);           // [add22]
+                        insertCmd.Parameters.AddWithValue("@less22", 0);          // [less22]
+                        insertCmd.Parameters.AddWithValue("@category2", item.Category); // [category2]
+                        insertCmd.Parameters.AddWithValue("@time1", DateTime.Today); // [time1]
+                        insertCmd.Parameters.AddWithValue("@rate1", item.Rate2);  // [rate1]
+                        insertCmd.Parameters.AddWithValue("@rate2", 0);           // [rate2]
+                        insertCmd.Parameters.AddWithValue("@rate3", 0);           // [rate3]
+                        insertCmd.Parameters.AddWithValue("@godown", "MAINGODWON"); // [godown]
+                        insertCmd.Parameters.AddWithValue("@wsrs", 0);            // [wsrs]
+                        insertCmd.Parameters.AddWithValue("@username", "admin");  // [username]
+                        insertCmd.Parameters.AddWithValue("@dmyname", "");        // [dmyname]
+                        insertCmd.Parameters.AddWithValue("@dmybno", 0);          // [dmybno]
+                        insertCmd.Parameters.AddWithValue("@company", "M PRODUCT"); // [company]
+                        insertCmd.Parameters.AddWithValue("@dmydate", "");        // [dmydate]
+                        insertCmd.Parameters.AddWithValue("@deleveryproduct", 0); // [deleveryproduct]
+                        insertCmd.Parameters.AddWithValue("@address1", ".");      // [address1]
+                        insertCmd.Parameters.AddWithValue("@address2", ".");      // [address2]
+                        insertCmd.Parameters.AddWithValue("@phoneno", ".");       // [phoneno]
+                        insertCmd.Parameters.AddWithValue("@podate", "");         // [podate]
+                        insertCmd.Parameters.AddWithValue("@pono", "");           // [pono]
+                        insertCmd.Parameters.AddWithValue("@reference", "");      // [reference]
+                        insertCmd.Parameters.AddWithValue("@despatch", "");       // [despatch]
+                        insertCmd.Parameters.AddWithValue("@destination", "");    // [destination]
+                        insertCmd.Parameters.AddWithValue("@terms", "");          // [terms]
+                        insertCmd.Parameters.AddWithValue("@cess", 0);            // [cess]
+                        insertCmd.Parameters.AddWithValue("@additionalcess", 0);  // [additionalcess]
+                        insertCmd.Parameters.AddWithValue("@bnochar", "1");       // [bnochar]
+                        insertCmd.Parameters.AddWithValue("@chkrate", 0);         // [chkrate]
+                        insertCmd.Parameters.AddWithValue("@dele_add_one", "");   // [dele_add_one]
+                        insertCmd.Parameters.AddWithValue("@dele_add_two", "");   // [dele_add_two]
+                        insertCmd.Parameters.AddWithValue("@dele_add_three", ""); // [dele_add_three]
+                        insertCmd.Parameters.AddWithValue("@dele_add_four", "");  // [dele_add_four]
+                        insertCmd.Parameters.AddWithValue("@dele_add_five", "");  // [dele_add_five]
+                        insertCmd.Parameters.AddWithValue("@dele_add_six", "");   // [dele_add_six]
+                        insertCmd.Parameters.AddWithValue("@packqty", 0);         // [packqty]
+                        insertCmd.Parameters.AddWithValue("@bonuspoints", 0);     // [bonuspoints]
+                        insertCmd.Parameters.AddWithValue("@sizename", "");       // [sizename]
+                        insertCmd.Parameters.AddWithValue("@sizevalue", 1);       // [sizevalue]
+                        insertCmd.Parameters.AddWithValue("@bnochar_end", "");    // [bnochar_end]
+                        insertCmd.Parameters.AddWithValue("@colour", "");         // [colour]
+                        insertCmd.Parameters.AddWithValue("@stcs", 0);            // [stcs]
+                        insertCmd.Parameters.AddWithValue("@sal_tonage", 0);      // [sal_tonage]
+                        insertCmd.Parameters.AddWithValue("@point_or_not", 1);    // [point_or_not]
+                        insertCmd.Parameters.AddWithValue("@sal_barcode", ".");   // [sal_barcode]
+                        insertCmd.Parameters.AddWithValue("@opincode", "0");      // [opincode]
+                        insertCmd.Parameters.AddWithValue("@gov_caption", "");    // [gov_caption]
+                        insertCmd.Parameters.AddWithValue("@mailid", "");         // [mailid]
+                        insertCmd.Parameters.AddWithValue("@distance", 0);        // [distance]
+                        insertCmd.Parameters.AddWithValue("@sales_einvoice_irn", "."); // [sales_einvoice_irn]
+                        insertCmd.Parameters.AddWithValue("@sales_einvoice_ackno", "."); // [sales_einvoice_ackno]
+                        insertCmd.Parameters.AddWithValue("@sales_einvoice_ackdate", "."); // [sales_einvoice_ackdate]
+                        insertCmd.Parameters.AddWithValue("@sales_einvoice_authtoken", "."); // [sales_einvoice_authtoken]
+
+
+                        //insertCmd.ExecuteNonQuery();
+                        // int placeholderCount = Regex.Matches(insertQuery, @"@\w+").Count;
+
+                        // // Compare with the number of parameters added
+                        // if (placeholderCount != insertCmd.Parameters.Count)
                         // {
-                        //     MessageBox.Show($"❌ Placeholder count: {qMarks} ≠ Parameters added: {paramsAdded}", "Mismatch Error");
-                        // }
-                        // else
-                        // {
-                        //     MessageBox.Show($"✅ Placeholder count matches parameters: {qMarks}", "OK");
+                        //     throw new InvalidOperationException($"Mismatch between placeholders ({placeholderCount}) and parameters ({insertCmd.Parameters.Count}).");
                         // }
 
-                        // insertCmd.ExecuteNonQuery();
+
+
+                        int qMarks = insertQuery.Count(c => c == '?');
+                        int paramsAdded = insertCmd.Parameters.Count;
+
+                        if (qMarks != paramsAdded)
+                        {
+                            MessageBox.Show($"❌ Placeholder count: {qMarks} ≠ Parameters added: {paramsAdded}", "Mismatch Error");
+                        }
+                        else
+                        {
+                            MessageBox.Show($"✅ Placeholder count matches parameters: {qMarks}", "OK");
+                        }
+                        BuildOdbcQueryWithValues(insertCmd.CommandText, insertCmd.Parameters);
+                        insertCmd.ExecuteNonQuery();
                     }
 
 
@@ -1293,6 +1675,37 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
         }
     }
 
+
+
+    public static string BuildOdbcQueryWithValues(string query, OdbcParameterCollection parameters)
+    {
+        string[] parts = query.Split('?');
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < parameters.Count; i++)
+        {
+            sb.Append(parts[i]);
+
+            var param = parameters[i];
+            if (param.Value == null || param.Value == DBNull.Value)
+            {
+                sb.Append("NULL");
+            }
+            else if (param.Value is string || param.Value is DateTime)
+            {
+                sb.AppendFormat("'{0}'", param.Value.ToString().Replace("'", "''"));
+            }
+            else
+            {
+                sb.Append(param.Value);
+            }
+        }
+
+        if (parts.Length > parameters.Count)
+            sb.Append(parts[parts.Length - 1]);
+
+        return sb.ToString();
+    }
 
 
 

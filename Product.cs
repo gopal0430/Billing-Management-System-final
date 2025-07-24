@@ -116,6 +116,8 @@ namespace GDS_Test_data.Models
         public string pname { get; set; }
         public decimal mrp { get; set; }
 
+         public int NoOfItems { get; set; }
+
         //  public string GetNativePName()
         //     {
         //         // Assuming PName is in Unicode and you want to convert it to UTF-8

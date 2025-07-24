@@ -28,10 +28,11 @@ namespace GDS_Test_data.Helpers
 		// }
 
 
-		private static readonly string ConnectionString = "Driver={SQL Server};Server=.;Database=rs_gst_27;Trusted_Connection=Yes;";
+		// private static readonly string ConnectionString = "Driver={SQL Server};Server=.;Database=rs_gst_27;Trusted_Connection=Yes;";
+		 private static readonly string ConnectionString  = "Driver={SQL Server};Server=.;Database=rs_gst_27;Trusted_Connection=Yes;";
 
 		// Generic method to execute scalar queries and return result
-		public static object ExecuteScalar(string query)
+		public static object ExecuteScalar(string query,string ConnectionString)
 		{
 			using (OdbcConnection connection = new OdbcConnection(ConnectionString))
 			{

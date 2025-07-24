@@ -13,25 +13,50 @@
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Header -->
-            <RowDefinition Height="Auto"/>  <!-- Product entry -->
-            <RowDefinition Height="*"/>     <!-- DataGrids and Total -->
+            <RowDefinition Height="Auto"/>
+            <!-- Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- Product entry -->
+            <RowDefinition Height="*"/>
+            <!-- DataGrids and Total -->
         </Grid.RowDefinitions>
 
         <!-- Header Controls -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="Bill Book:" VerticalAlignment="Center" Foreground="White"/>
-            <ComboBox Width="150" Margin="5,0"/>
-            <TextBlock Text="Date:" VerticalAlignment="Center" Foreground="White"/>
-            <DatePicker Width="150" Margin="5,0"/>
-            <TextBlock Text="Bill No:" VerticalAlignment="Center" Foreground="White"/>
-            <TextBox Name="BillNoTextBox" Width="100" Margin="5,0"/>
-            <TextBlock Text="Customer Name:" VerticalAlignment="Center" Foreground="White"/>
-            <TextBox Width="200" Margin="5,0"/>
+        <StackPanel Grid.Row="0"
+                Orientation="Horizontal"
+                Margin="0,0,0,10">
+            <TextBlock Text="Bill Book:"
+                    VerticalAlignment="Center"
+                    Foreground="White"/>
+            <ComboBox Width="150"
+                    Margin="5,0"/>
+            <TextBlock Text="Date:"
+                    VerticalAlignment="Center"
+                    Foreground="White"/>
+            <DatePicker Width="150"
+                    Name="DateTextBox"
+                    Margin="5,0"/>
+            <TextBlock Text="Bill No:"
+                    VerticalAlignment="Center"
+                    Foreground="White"/>
+            <TextBox Name="BillNoTextBox"
+                    Width="100"
+                    Margin="5,0"/>
+            <TextBlock Text="Customer Name:"
+                    VerticalAlignment="Center"
+                    Foreground="White"/>
+            <TextBox Width="200"
+                    Name="CustomerTextBox"
+                    KeyDown="CustomerTextBox_KeyDown"
+                    Margin="5,0"/>
         </StackPanel>
 
         <!-- Product Entry Panel -->
-        <Border Grid.Row="1" CornerRadius="10" Background="WhiteSmoke" Padding="10" Margin="0 0 0 10">
+        <Border Grid.Row="1"
+                CornerRadius="10"
+                Background="WhiteSmoke"
+                Padding="10"
+                Margin="0 0 0 10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -47,31 +72,83 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Label Content="Product:" VerticalAlignment="Center" Grid.Column="0" Margin="5,0"/>
-                <TextBox x:Name="ProductTextBox" Grid.Column="1" Padding="4" FontSize="14" TextChanged="ProductTextBox_TextChanged"/>
+                <Label Content="Product:"
+                        VerticalAlignment="Center"
+                        Grid.Column="0"
+                        Margin="5,0"/>
+                <TextBox x:Name="ProductTextBox"
+                        Grid.Column="1"
+                        Padding="4"
+                        FontSize="14"
+                        TextChanged="ProductTextBox_TextChanged"/>
 
-                <Label Content="Rate:" VerticalAlignment="Center" Grid.Column="2" Margin="10,0,0,0"/>
-                <StackPanel Grid.Column="3" Orientation="Horizontal">
-                    <TextBox x:Name="RateTextBox" Width="100" Padding="4" FontSize="14" Visibility="Visible"/>
-                    <ComboBox x:Name="RateComboBox" Width="80" Margin="10,0,0,0" FontFamily="SunTommy y Tamil" Visibility="Collapsed"
-                              ItemsSource="{Binding RateOptions}" SelectionChanged="RateComboBox_SelectionChanged"
-                              PreviewKeyDown="RateComboBox_PreviewKeyDown" Background="White" FontSize="14"/>
+                <Label Content="Rate:"
+                        VerticalAlignment="Center"
+                        Grid.Column="2"
+                        Margin="10,0,0,0"/>
+                <StackPanel Grid.Column="3"
+                        Orientation="Horizontal">
+                    <TextBox x:Name="RateTextBox"
+                            Width="100"
+                            Padding="4"
+                            FontSize="14"
+                            Visibility="Visible"/>
+                    <ComboBox x:Name="RateComboBox"
+                            Width="80"
+                            Margin="10,0,0,0"
+                            FontFamily="SunTommy y Tamil"
+                            Visibility="Collapsed"
+                              ItemsSource="{Binding RateOptions}"
+                            SelectionChanged="RateComboBox_SelectionChanged"
+                              PreviewKeyDown="RateComboBox_PreviewKeyDown"
+                            Background="White"
+                            FontSize="14"/>
                 </StackPanel>
 
-                <Label Content="Qty:" VerticalAlignment="Center" Grid.Column="4" Margin="10,0,0,0"/>
-                <TextBox x:Name="QuantityTextBox" Grid.Column="5" Padding="4" FontSize="14" KeyDown="QtyTxtBox_KeyDown"/>
+                <Label Content="Qty:"
+                        VerticalAlignment="Center"
+                        Grid.Column="4"
+                        Margin="10,0,0,0"/>
+                <TextBox x:Name="QuantityTextBox"
+                        Grid.Column="5"
+                        Padding="4"
+                        FontSize="14"
+                        KeyDown="QtyTxtBox_KeyDown"/>
 
-                <CheckBox x:Name="SeparateRowsCheckBox" Grid.Column="6" Content="Separate Rows" VerticalAlignment="Center" Margin="10,0"/>
+                <CheckBox x:Name="SeparateRowsCheckBox"
+                        Grid.Column="8"
+                        Content="Separate Rows"
+                        VerticalAlignment="Center"
+                        Margin="10,0"/>
 
-                <ComboBox x:Name="masalaComboBox" Grid.Column="7" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left"
-                          Margin="10,0" MinWidth="100" MaxWidth="300" Width="Auto" Loaded="masalaComboBox_Loaded"
+                <ComboBox x:Name="masalaComboBox"
+                        Grid.Column="9"
+                        FontSize="14"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left"
+                          Margin="10,0"
+                        MinWidth="100"
+                        MaxWidth="300"
+                        Width="Auto"
+                        Loaded="masalaComboBox_Loaded"
                           KeyDown="masalaComboBox_KeyDown">
-                    <ComboBoxItem Content="சாம்பார் பொடி" Tag="Sambar_Masala"/>
-                    <ComboBoxItem Content="கறி மசாலா" Tag="Kari_Masala"/>
+                    <ComboBoxItem Content="சாம்பார் பொடி"
+                            Tag="Sambar_Masala"/>
+                    <ComboBoxItem Content="கறி மசாலா"
+                            Tag="Kari_Masala"/>
                 </ComboBox>
 
-                <Button x:Name="ClearButton" Grid.Column="8" Content="Clear" Width="80" Height="30" Background="#ff5555" Foreground="White"
-                        FontWeight="Bold" BorderBrush="Transparent" Margin="10,0" Click="ClearButton_Click"/>
+                <Button x:Name="ClearButton"
+                        Grid.Column="10"
+                        Content="Clear"
+                        Width="80"
+                        Height="30"
+                        Background="#ff5555"
+                        Foreground="White"
+                        FontWeight="Bold"
+                        BorderBrush="Transparent"
+                        Margin="10,0"
+                        Click="ClearButton_Click"/>
             </Grid>
         </Border>
 
@@ -98,9 +175,17 @@
                       Loaded="ProductsDataList_Loaded"
                       PreviewKeyDown="ProductsDataList_PreviewKeyDown">
                 <DataGrid.Columns>
-                    <DataGridTextColumn x:Name="PName" Header="Product Name" Binding="{Binding pname}" Width="*" FontFamily="SunTommy"/>
-                    <DataGridTextColumn Header="Rate" Binding="{Binding Rate2}" Width="*"/>
-                    <DataGridTextColumn Header="MRP" Binding="{Binding mrp}" Width="*"/>
+                    <DataGridTextColumn x:Name="PName"
+                            Header="Product Name"
+                            Binding="{Binding pname}"
+                            Width="*"
+                            FontFamily="SunTommy"/>
+                    <DataGridTextColumn Header="Rate"
+                            Binding="{Binding Rate2}"
+                            Width="*"/>
+                    <DataGridTextColumn Header="MRP"
+                            Binding="{Binding mrp}"
+                            Width="*"/>
                 </DataGrid.Columns>
             </DataGrid>
 
@@ -121,33 +206,100 @@
                       ItemsSource="{Binding LoadedProducts}">
                 <DataGrid.Resources>
                     <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="LightGray"/>
-                        <Setter Property="Foreground" Value="Black"/>
-                        <Setter Property="FontWeight" Value="Bold"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                        <Setter Property="Background"
+                                Value="LightGray"/>
+                        <Setter Property="Foreground"
+                                Value="Black"/>
+                        <Setter Property="FontWeight"
+                                Value="Bold"/>
+                        <Setter Property="HorizontalContentAlignment"
+                                Value="Center"/>
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
-                    <DataGridTextColumn x:Name="PNameNative" Header="Product" Binding="{Binding PName}" Width="*">
+                    <DataGridTextColumn x:Name="PNameNative"
+                            Header="Product"
+                            Binding="{Binding PName}"
+                            Width="*">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="FontFamily" Value="SunTommy y Tamil"/>
+                                <Setter Property="FontFamily"
+                                        Value="SunTommy y Tamil"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="RATE" Binding="{Binding Rate2}" Width="*"/>
-                    <DataGridTextColumn Header="QTY" Binding="{Binding DisplayQuantity}" Width="*" FontFamily="SunTommy y Tamil"/>
-                    <DataGridTextColumn Header="TotalAmount" Binding="{Binding Total}" Width="*"/>
+                    <DataGridTextColumn Header="RATE"
+                            Binding="{Binding Rate2}"
+                            Width="*"/>
+                    <DataGridTextColumn Header="QTY"
+                            Binding="{Binding DisplayQuantity}"
+                            Width="*"
+                            FontFamily="SunTommy y Tamil"/>
+                    <DataGridTextColumn Header="TotalAmount"
+                            Binding="{Binding Total}"
+                            Width="*"/>
                 </DataGrid.Columns>
             </DataGrid>
 
             <!-- Grand Total -->
-            <Border Grid.Row="2" Background="LightYellow" CornerRadius="10" Padding="10" Margin="0,10,0,0" VerticalAlignment="Bottom">
+            <!-- <Border Grid.Row="2" Background="LightYellow" CornerRadius="10" Padding="10" Margin="0,10,0,0" VerticalAlignment="Bottom">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="left">
+                    <TextBlock Text="No.Of.Items " FontWeight="Bold" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ProductCountTextBlock" FontWeight="Bold" FontSize="16" Foreground="DarkGreen" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="Grand Total: " FontWeight="Bold" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center"/>
                     <TextBlock x:Name="GrandTotalTextBlock" FontWeight="Bold" FontSize="16" Foreground="DarkGreen" Margin="10,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
+            </Border> -->
+            <Border Grid.Row="2"
+                    Background="LightYellow"
+                    CornerRadius="10"
+                    Padding="10"
+                    Margin="0,10,0,0"
+                    VerticalAlignment="Bottom">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left-aligned: Item Count -->
+                    <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Left"
+                            Grid.Column="0">
+                        <TextBlock Text="No.Of.Items "
+                                FontWeight="Bold"
+                                FontSize="16"
+                                Foreground="DarkBlue"
+                                VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ProductCountTextBlock"
+                                FontWeight="Bold"
+                                FontSize="16"
+                                Foreground="DarkGreen"
+                                Margin="10,0,0,0"
+                                VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Right-aligned: Grand Total -->
+                    <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Grid.Column="1">
+                        <TextBlock Text="Grand Total: "
+                                FontWeight="Bold"
+                                FontSize="16"
+                                Foreground="DarkBlue"
+                                VerticalAlignment="Center"/>
+                        <TextBlock x:Name="GrandTotalTextBlock"
+                                FontWeight="Bold"
+                                FontSize="16"
+                                Foreground="DarkGreen"
+                                Margin="10,0,0,0"
+                                VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
             </Border>
+
         </Grid>
     </Grid>
 </mah:MetroWindow>
