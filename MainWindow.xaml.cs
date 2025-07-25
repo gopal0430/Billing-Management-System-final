@@ -154,6 +154,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
     public string UnitName = string.Empty;
     public string SelectedPCode { get; set; } = "";
 
+
+
     public MainWindow()
     {
         InitializeComponent();
@@ -181,6 +183,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
     private void TxtBox_Clear()
     {
+
+        CustomerTextBox.Text = "COUNTER SALES";
         ProductTextBox.Clear();
         ProductTextBox.FontFamily = new FontFamily("Segoe UI");
         RateTextBox.Clear();
@@ -191,8 +195,9 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         RateComboBox.Visibility = Visibility.Collapsed;
         masalaComboBox.SelectedIndex = -1;
         GrandTotalTextBlock.Text = "";
-        CustomerTextBox.Text = "COUNTER SALES";
+        ProductCountTextBlock.Text = "";
         
+
     }
 
     private void Clear_Fields()
@@ -200,7 +205,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         RateComboBox.Text = "";
         UnitName = string.Empty;
         SeparateRowsCheckBox.IsChecked = false;
-        GrandTotalTextBlock.Text="";
+        // GrandTotalTextBlock.Text = "";
 
     }
 
@@ -404,6 +409,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                     ProductsDataList.ScrollIntoView(ProductsDataList.SelectedItem);
                 }
             }
+
+
         }
         catch (Exception ex)
         {
@@ -472,12 +479,19 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
     private bool isTextChanging = false;
     private bool isDataGridSelection = false;
 
+    private bool _enterPressed = false;
     private void ProductTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (isTextChanging || isDataGridSelection) return; // Prevent re-entrancy and selection-triggered changes
+
 
         try
         {
+
+
+            if (isTextChanging || isDataGridSelection) return; // Prevent re-entrancy and selection-triggered changes
+            if (_enterPressed)
+                return; // only respond to Enter key-triggered changes
+
             isTextChanging = true;
 
             string searchText = ProductTextBox.Text?.Trim();
@@ -522,7 +536,9 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         {
             // Reset the flag to allow further text changes
             isTextChanging = false;
+            _enterPressed = false; // reset the flag
         }
+
     }
 
     private void ProductsDataList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -880,7 +896,10 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         try
         {
             if (Products.Count == 0) return;
-
+            if (e.Key == Key.Enter)
+            {
+                _enterPressed = true;
+            }
             int currentIndex = ProductsDataList.SelectedIndex;
 
             if (e.Key == Key.Down)
