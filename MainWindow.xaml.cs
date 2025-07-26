@@ -196,7 +196,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         masalaComboBox.SelectedIndex = -1;
         GrandTotalTextBlock.Text = "";
         ProductCountTextBlock.Text = "";
-        
+
 
     }
 
@@ -1762,8 +1762,9 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         string query = @"
         SELECT 
                 p.pname, 
-              p.Rate1, 
+                p.Rate1, 
                 p.Rate2, 
+                p.caserate,
                 pt.Category, 
                 pt.QTY,
                 pt.unit,
@@ -1798,7 +1799,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
 
                     string unit = reader["Unit"].ToString(); // normalize casing
-                    decimal rate;
+                    decimal rate = 0;
 
                     switch (unit)
                     {//gram
@@ -1820,7 +1821,15 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                         //piece
                         case "gP];":
                         case "unit":
-                            rate = Convert.ToDecimal(reader["Rate2"]);
+                            if (category == "Kari_Masala")
+                            {
+                                rate = Convert.ToDecimal(reader["caserate"]);
+                            }
+                            else if (category == "Sambar_Masala")
+                            {
+                                rate = Convert.ToDecimal(reader["Rate2"]);
+
+                            }
                             break;
 
                         default:
