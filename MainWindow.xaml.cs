@@ -194,8 +194,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         RateTextBox.Visibility = Visibility.Visible;
         RateComboBox.Visibility = Visibility.Collapsed;
         masalaComboBox.SelectedIndex = -1;
-        GrandTotalTextBlock.Text = "";
-        ProductCountTextBlock.Text = "";
+        
 
 
     }
@@ -243,6 +242,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
     {
         ProductsDataGrid.ItemsSource = null; // Clears the data grid
         LoadedProducts.Clear();
+        GrandTotalTextBlock.Text = "";
+        ProductCountTextBlock.Text = "";
         TxtBox_Clear();
 
     }
