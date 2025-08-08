@@ -21,6 +21,7 @@ using System.Data;
 using System.Data.SqlClient;
 using MahApps.Metro.Controls.Dialogs;
 using System.Text.RegularExpressions;
+using System.Numerics;
 
 
 
@@ -60,35 +61,63 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.F1) // Check if F1 key is pressed
+        try
         {
-            var result = MessageBox.Show("Do you want to save the data?", "Save", MessageBoxButton.OKCancel);
-            if (result == MessageBoxResult.OK)
+            if (e.Key == Key.F1) // Check if F1 key is pressed
             {
-                SaveSalesToDatabase(); // Call your save logic here
+                var result = MessageBox.Show("Do you want to save the data?", "Save", MessageBoxButton.OKCancel);
+                if (result == MessageBoxResult.OK)
+                {
+                    SaveSalesToDatabase(); // Call your save logic here
+                    //SaveSalesToQueue();
+                    LogHelper.Info("Sales data saved to database via F1 key.");
+                }
+                Grid_Clear();
+                LogHelper.Info("Grid cleared after save operation.");
             }
-            Grid_Clear();
-        }
 
-        if (e.Key == Key.Escape)
-        {
-            FocusLastCellInGrid();
-            // FocusFirstCellInGrid();
-            e.Handled = true;
+            if (e.Key == Key.F4) // Check if F4 key is pressed
+            {
+                var result = MessageBox.Show("Do you want to Queue the data?", "Queue", MessageBoxButton.OKCancel);
+                if (result == MessageBoxResult.OK)
+                {
+                    // SaveSalesToDatabase(); 
+                    SaveSalesToQueue();// Call your Queue logic here
+                    LogHelper.Info("Sales data saved to database via F4 key.");
+                }
+                Grid_Clear();
+                LogHelper.Info("Grid cleared after save operation.");
+            }
+            if (e.Key == Key.Escape)
+            {
+                FocusLastCellInGrid();
+                LogHelper.Info("Escape key pressed - Focus moved to last cell.");
+                e.Handled = true;
+            }
+
+            if (e.Key == Key.F8)
+            {
+                TxtBox_Clear();
+                ProductTextBox.Focus();
+                LogHelper.Info("F8 key pressed - TextBoxes cleared and focus set to ProductTextBox.");
+                e.Handled = true;
+            }
+
+            if (e.Key == Key.F9)
+            {
+                CustomerTextBox.Focus();
+                CustomerTextBox.SelectAll(); // Optional: highlight the text
+                LogHelper.Info("F9 key pressed - Focused and selected CustomerTextBox.");
+                e.Handled = true; // Prevent further propagation
+            }
         }
-        if (e.Key == Key.F8)
+        catch (Exception ex)
         {
-            TxtBox_Clear();
-            ProductTextBox.Focus();
-            e.Handled = true;
-        }
-        if (e.Key == Key.F9)
-        {
-            CustomerTextBox.Focus();
-            CustomerTextBox.SelectAll(); // Optional: highlight the text
-            e.Handled = true; // Prevent further propagation
+            LogHelper.Error("Error in Window_PreviewKeyDown event.", ex);
+            MessageBox.Show("Something went wrong. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
 
 
     private void FocusFirstCellInGrid()
@@ -158,6 +187,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
     public MainWindow()
     {
+
         InitializeComponent();
         this.DataContext = this; // if using code-behind
                                  // this.PreviewKeyDown += Window_KeyDown; // Attach the event handler
@@ -179,6 +209,10 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         DateTextBox.Text = DateTime.Today.ToString("dd/MM/yyyy");
         CustomerTextBox.Text = "COUNTER SALES";
 
+
+        LogHelper.Info("Application started - testing Log4net");
+
+
     }
 
     private void TxtBox_Clear()
@@ -194,7 +228,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
         RateTextBox.Visibility = Visibility.Visible;
         RateComboBox.Visibility = Visibility.Collapsed;
         masalaComboBox.SelectedIndex = -1;
-        
+
 
 
     }
@@ -393,6 +427,8 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
 
     }
+
+
 
     private void ProductTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -732,6 +768,28 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
     }
 
 
+    private void RateTxtBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        try
+        {
+            if (e.Key == Key.Enter &&
+                decimal.TryParse(RateTextBox.Text, out decimal rate) &&
+                rate > 0.0m)
+            {
+
+                QuantityTextBox.Focus();
+                e.Handled = true;
+            }
+
+
+
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex);
+        }
+
+    }
     private void QtyTxtBox_KeyDown(object sender, KeyEventArgs e)
     {
         try
@@ -1102,7 +1160,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
 
 
-    private void UpdateGrandTotal()
+    private Decimal UpdateGrandTotal()
     {
         try
         {
@@ -1119,11 +1177,12 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
             }
 
             GrandTotalTextBlock.Text = grandTotal.ToString("C", new System.Globalization.CultureInfo("en-IN"));
-
+            return grandTotal;
         }
         catch (Exception ex)
         {
             ShowError(ex);
+            return 0; // or return a fallback value
         }
     }
 
@@ -1507,12 +1566,188 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
 
 
 
+
+    private async void SaveSalesToQueue()
+    {
+
+        int newBillNo = 1; // default bill no
+
+        try
+        {
+            using (OdbcConnection connection = new OdbcConnection(DbConfig.ConnectionString))
+            {
+                connection.Open();
+
+                // Get new bill number
+                string getBillQuery = "SELECT MAX(bno) FROM [dbo].[sales_01] WHERE bno IS NOT NULL;";
+                using (OdbcCommand getBillCmd = new OdbcCommand(getBillQuery, connection))
+                {
+                    object result = getBillCmd.ExecuteScalar();
+                    if (result != DBNull.Value && result != null)
+                    {
+                        newBillNo = Convert.ToInt32(result) + 1;
+                    }
+                }
+
+                Decimal Total123 = UpdateGrandTotal();
+                foreach (var item in LoadedProducts)
+                {
+                    string insertQuery = @"INSERT INTO [rs_gst_27].[dbo].[sales_01]
+(
+    [date], [bno], [party], [product], [rate], [qty], [category], [mrp], [sno], [costprice],
+    [add1], [add2], [subs1], [subs2], [billvalue], [batchno], [expdate], [type], [payment], [pperbox],
+    [caption], [note], [city], [codeno], [tax], [free], [st1], [tin], [bbookno], [billbook],
+    [salesman], [commcode], [tonage], [less1], [less2], [less3], [less4], [less5], [useable], [less6],
+    [add1caption], [add2caption], [less1caption], [less2caption], [add22], [less22], [category2], [time1],
+    [rate1], [rate2], [rate3], [godown], [wsrs], [username], [dmyname], [dmybno], [company], [dmydate],
+    [deleveryproduct], [address1], [address2], [phoneno], [podate], [pono], [reference], [despatch],
+    [destination], [terms], [cess], [additionalcess], [bnochar], [chkrate], [dele_add_one], [dele_add_two],
+    [dele_add_three], [dele_add_four], [dele_add_five], [dele_add_six], [packqty], [bonuspoints],
+    [sizename], [sizevalue], [bnochar_end], [colour], [stcs]
+)
+VALUES
+(
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+);";
+
+
+                    // decimal.TryParse(item.Caption1, out decimal caseRate);
+                    // decimal.TryParse(item.Caption2, out decimal rate1);
+                    // decimal.TryParse(item.Caption3, out decimal rate2);
+
+                    using (OdbcCommand insertCmd = new OdbcCommand(insertQuery, connection))
+                    {
+                        decimal rateResult = (decimal)Calculate_Price(Convert.ToDouble(item.Rate2), Convert.ToDouble(item.tax));
+                        object[] values = new object[]
+    {
+                            DateTime.Today,                          // [date]
+                            newBillNo,                               // [bno]
+                            EnsureCustomerName(),                    // [party]
+                            item.PName,                              // [product]
+                            (decimal)Calculate_Price(Convert.ToDouble(item.Rate2), Convert.ToDouble(item.tax)), // [rate]
+                            item.Quantity,                           // [qty]
+                            "M PRODUCT",                             // [category]
+                            0,                                       // [mrp]
+                            1343,                                    // [sno]
+                            146.02,                                  // [costprice]
+
+                            160.91,                                  // [add1]
+                            0,                                       // [add2]
+                            0,                                       // [subs1]
+                            0,                                       // [subs2]
+                            Total123,                                 // [billvalue]
+                            item.PCode,                              // [batchno]
+                            DateTime.Now,                            // [expdate]
+                            "SALES",                                 // [type]
+                            item.Quantity * item.Rate2,             // [payment]
+                            1,                                       // [pperbox]
+
+                            item.Unit,                               // [caption]
+                            ".",                                     // [note]
+                            "CASH AREA",                             // [city]
+                            "",                                      // [codeno]
+                            item.tax,                                // [tax]
+                            0,                                       // [free]
+                            ".",                                     // [st1]
+                            ".",                                     // [tin]
+                            1,                                       // [bbookno]
+                            "GST JUNE 24-25",                        // [billbook]
+
+                            "DIRCET",                                // [salesman]
+                            "361",                                   // [commcode]
+                            "0",                                     // [tonage]
+                            0,                                       // [less1]
+                            0,                                       // [less2]
+                            0,                                       // [less3]
+                            0,                                       // [less4]
+                            0,                                       // [less5]
+                            1,                                       // [useable]
+                            10,                                      // [less6]
+
+                            "Transport Charges",                     // [add1caption]
+                            "Wages",                                 // [add2caption]
+                            "Spl Pongan Offer",                      // [less1caption]
+                            "Disp(-)",                               // [less2caption]
+                            0,                                       // [add22]
+                            0,                                       // [less22]
+                            item.Category,                           // [category2]
+                            DateTime.Today,                          // [time1]
+
+                            item.Rate,                                   // [rate1]  (Caption2)
+                            item.CaseRate,                                // [rate2]  (Caption1)
+                            item.Rate2,                                   // [rate3]  (Caption3)
+
+                            "MAINGODWON",                            // [godown]
+                            0,                                       // [wsrs]
+                            "admin",                                 // [username]
+                            "",                                      // [dmyname]
+                            0,                                       // [dmybno]
+                            "M PRODUCT",                             // [company]
+                            "",                                      // [dmydate]
+                            0,                                       // [deleveryproduct]
+                            ".",                                     // [address1]
+                            ".",                                     // [address2]
+                            ".",                                     // [phoneno]
+                            "",                                      // [podate]
+                            "",                                      // [pono]
+                            "",                                      // [reference]
+                            "",                                      // [despatch]
+                            "",                                      // [destination]
+                            "",                                      // [terms]
+                            0,                                       // [cess]
+                            0,                                       // [additionalcess]
+
+                            "1",                                     // [bnochar]
+                            0,                                       // [chkrate]
+                            "",                                      // [dele_add_one]
+                            "",                                      // [dele_add_two]
+                            "",                                      // [dele_add_three]
+                            "",                                      // [dele_add_four]
+                            "",                                      // [dele_add_five]
+                            "",                                      // [dele_add_six]
+                            0,                                       // [packqty]
+                            0,                                       // [bonuspoints]
+                            "",                                      // [sizename]
+                            1,                                       // [sizevalue]
+                            "",                                      // [bnochar_end]
+                            "",                                      // [colour]
+                            0                                        // [stcs]
+    };
+
+
+
+                        BindParameters(insertCmd, values);
+                        insertCmd.ExecuteNonQuery();
+
+                    }
+
+
+                }
+
+                // MessageBox.Show($"Sales saved successfully. Bill No: {newBillNo}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // await ShowBillSavedDialogAsync(newBillNo);
+                await ShowBillSavedDialogAsync(newBillNo.ToString());
+            }
+        }
+        catch (OdbcException ex)
+        {
+            MessageBox.Show("ODBC Error:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("General Error:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+
+
+
+
     public static void BindParameters(OdbcCommand cmd, params object[] values)
     {
-        if (values.Length != 96)
-        {
-            throw new ArgumentException($"Expected 96 parameters, but received {values.Length}.");
-        }
+
 
         foreach (var val in values)
         {
@@ -1812,6 +2047,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                                 rate = Convert.ToDecimal(reader["Rate2"]);
                                 rate /= 1000;
                             }
+
                             break;
                         //kilo
                         case "fpNyh":

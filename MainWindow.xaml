@@ -92,7 +92,7 @@
                             Width="100"
                             Padding="4"
                             FontSize="14"
-                            Visibility="Visible"/>
+                            Visibility="Visible"  KeyDown="RateTxtBox_KeyDown"/>
                     <ComboBox x:Name="RateComboBox"
                             Width="80"
                             Margin="10,0,0,0"

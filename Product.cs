@@ -116,7 +116,7 @@ namespace GDS_Test_data.Models
         public string pname { get; set; }
         public decimal mrp { get; set; }
 
-         public int NoOfItems { get; set; }
+        public int NoOfItems { get; set; }
 
         //  public string GetNativePName()
         //     {
@@ -151,18 +151,21 @@ namespace GDS_Test_data.Models
     //     public decimal mrp { get; set; }
     // }
 
-public class SelectedProduct
-{
-    public string PName { get; set; }
-    public string PCode { get; set; }
-    public decimal Rate2 { get; set; }
-    public decimal Quantity { get; set; }
-    public decimal Total => Rate2 * Quantity;
-    public string Category { get; set; }
-    public string Unit { get; set; }
-    public decimal tax { get; set; }
-    public string DisplayQuantity => $"{Quantity} {Unit}";
-}
+    public class SelectedProduct
+    {
+        public string PName { get; set; }
+        public string PCode { get; set; }
+        public decimal Rate2 { get; set; }
+        public decimal Rate { get; set; }
+        public decimal CaseRate { get; set; }
+
+        public decimal Quantity { get; set; }
+        public decimal Total => Rate2 * Quantity;
+        public string Category { get; set; }
+        public string Unit { get; set; }
+        public decimal tax { get; set; }
+        public string DisplayQuantity => $"{Quantity} {Unit}";
+    }
 
 
 }
