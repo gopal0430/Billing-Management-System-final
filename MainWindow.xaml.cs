@@ -26,7 +26,8 @@ using System.Numerics;
 
 
 
-namespace MyWpfApp;
+namespace MyWpfApp
+{
 
 /// <summary>
 /// Interaction logic for MainWindow.xaml
@@ -68,7 +69,7 @@ public partial class MainWindow : MahApps.Metro.Controls.MetroWindow
                 var result = MessageBox.Show("Do you want to save the data?", "Save", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                 {
-                    SaveSalesToDatabase(); // Call your save logic here
+                    //SaveSalesToDatabase(); // Call your save logic here
                     //SaveSalesToQueue();
                     LogHelper.Info("Sales data saved to database via F1 key.");
                 }
@@ -1728,7 +1729,9 @@ VALUES
 
                 // MessageBox.Show($"Sales saved successfully. Bill No: {newBillNo}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 // await ShowBillSavedDialogAsync(newBillNo);
-                await ShowBillSavedDialogAsync(newBillNo.ToString());
+                // await ShowBillSavedDialogAsync(newBillNo.ToString());
+                  MessageBox.Show($"Sales saved successfully. ", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
             }
         }
         catch (OdbcException ex)
@@ -1917,7 +1920,8 @@ VALUES
 
                 // MessageBox.Show($"Sales saved successfully. Bill No: {newBillNo}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 // await ShowBillSavedDialogAsync(newBillNo);
-                await ShowBillSavedDialogAsync(newBillNo.ToString());
+                // await ShowBillSavedDialogAsync(newBillNo.ToString());
+                 MessageBox.Show($"Sales saved successfully. ", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (OdbcException ex)
@@ -2112,4 +2116,5 @@ VALUES
 
 
 
+}
 }

@@ -8,6 +8,9 @@ using log4net.Config;
 /// Implementation of log4net App.xaml
 /// </summary>
 
+namespace MyWpfApp
+{
+
 public partial class App : Application
 {
     protected override void OnStartup(StartupEventArgs e)
@@ -19,4 +22,5 @@ public partial class App : Application
 
         base.OnStartup(e);
     }
+}
 }
